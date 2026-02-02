@@ -1,0 +1,64 @@
+# --------------------
+# Python
+# --------------------
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+.env
+venv/
+ENV/
+env/
+.venv/
+
+# --------------------
+# Virtual environments
+# --------------------
+venv/
+env/
+.venv/
+
+# --------------------
+# OS files
+# --------------------
+.DS_Store
+Thumbs.db
+
+# --------------------
+# IDE / Editor
+# --------------------
+.vscode/
+.idea/
+
+# --------------------
+# Logs & temp files
+# --------------------
+*.log
+*.tmp
+*.bak
+
+# --------------------
+# Outputs / generated files
+# --------------------
+# Outputs/
+# pipeline_run_stats.xlsx
+# check.xlsx
+
+# --------------------
+# Secrets
+# --------------------
+.env
+
+
+# --------------------
+# Python packaging
+# --------------------
+dist/
+build/
+*.egg-info/
+
+# --------------------
+# Jupyter
+# --------------------
+.ipynb_checkpoints/
