@@ -47,7 +47,6 @@ DUP_THRESHOLD = 0.60
 # -----------------------------
 # Output Configuration
 # -----------------------------
-from pathlib import Path
 
 PROJECT_DIR = Path(__file__).resolve().parent
 OUTPUTS_DIR = PROJECT_DIR / "Outputs"
@@ -127,21 +126,21 @@ LOCATIONS_LIST = []  # Will be populated below
 
 # Determine which sources to fetch
 FETCH_COMPANIES = True  # Set to False to skip companies
-FETCH_LOCATIONS = False  # Set to True to also fetch locations
+FETCH_LOCATIONS = True  # Set to True to also fetch locations
 
 # Populate lists based on configuration
 if FETCH_COMPANIES:
     table, field = get_table_config("supplier")
     companies_df = run_query(f"SELECT {field} FROM {table} ORDER BY company_name ASC;")
     if companies_df is not None:
-        COMPANIES_LIST = list(companies_df["full_name"].unique())[:5]
+        COMPANIES_LIST = list(companies_df["full_name"].unique())[:20]
         print(f'COMPANIES to fetch: {len(COMPANIES_LIST)}')
 
 if FETCH_LOCATIONS:
     table, field = get_table_config("location")
     locations_df = run_query(f"SELECT {field} FROM {table} ORDER BY company_name ASC;")
     if locations_df is not None:
-        LOCATIONS_LIST = list(locations_df["full_name"].unique())[:5]
+        LOCATIONS_LIST = list(locations_df["full_name"].unique())[:20]
         print(f'LOCATIONS to fetch: {len(LOCATIONS_LIST)}')
 
 # -----------------------------

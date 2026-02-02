@@ -4,6 +4,8 @@
 # -----------------------------
 # Company Aliases for Validation
 # -----------------------------
+INTERNAL_DEDUPE_COLS = ["er_uri", "er_is_duplicate", "er_original_uri", "dup_group_id"]
+
 COMPANY_ALIASES = {
     "Ollion, Inc.": ["Ollion", "Ollion Inc", "Ollion, Inc."],
     "3M Company": ["3M", "3M Company", "Minnesota Mining and Manufacturing"],

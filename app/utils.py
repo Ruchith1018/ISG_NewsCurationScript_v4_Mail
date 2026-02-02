@@ -139,6 +139,16 @@ def fetch_news_articles(er, from_dt, to_dt, companies, max_items, language, data
             )
 
             for art in query.execQuery(er, sortBy="date", maxItems=max_items, returnInfo=return_info):
+
+                info_uri = art.get("uri")
+                is_dup = art.get("isDuplicate", False)
+
+                orig = art.get("originalArticle") or {}
+                orig_uri = orig.get("uri") if isinstance(orig, dict) else None
+
+                # Use original uri as group if duplicate, else self uri
+                group_uri = orig_uri if is_dup and orig_uri else info_uri
+
                 all_articles.append({
                     "company": company,
                     "company_name": company,
@@ -148,6 +158,15 @@ def fetch_news_articles(er, from_dt, to_dt, companies, max_items, language, data
                     "url": art.get("url"),
                     "lang": art.get("lang"),
                     "cutoff_time": datetime.now(),
+
+                    # internal-only columns (we will drop before final excel)
+                    "er_uri": info_uri,
+                    "er_is_duplicate": is_dup,
+                    "er_original_uri": orig_uri,
+                    "dup_group_id": group_uri,
+
+                    # the only dedupe column we want to keep in final excel
+                    "is_duplicate": "Yes" if is_dup else "No",
                 })
 
             print(f"✅ Done for {company}")
@@ -169,6 +188,15 @@ def fetch_news_articles(er, from_dt, to_dt, companies, max_items, language, data
 
             art_count = 0
             for art in q.execQuery(er, sortBy="date", maxItems=max_items):
+
+                info_uri = art.get("uri")
+                is_dup = art.get("isDuplicate", False)
+
+                orig = art.get("originalArticle") or {}
+                orig_uri = orig.get("uri") if isinstance(orig, dict) else None
+
+                group_uri = orig_uri if is_dup and orig_uri else info_uri
+
                 all_articles.append({
                     "company": company,
                     "company_name": company,
@@ -177,7 +205,13 @@ def fetch_news_articles(er, from_dt, to_dt, companies, max_items, language, data
                     "content": art.get("body", ""),
                     "url": art.get("url", ""),
                     "lang": art.get("lang", ""),
-                    "cutoff_time": datetime.now()
+                    "cutoff_time": datetime.now(),
+
+                    "er_uri": info_uri,
+                    "er_is_duplicate": is_dup,
+                    "er_original_uri": orig_uri,
+                    "dup_group_id": group_uri,
+                    "is_duplicate": "Yes" if is_dup else "No",
                 })
                 art_count += 1
             print(f"✅ Done for {company}:{art_count} articles")
@@ -267,35 +301,37 @@ def titan_embed_texts(texts: List[str]) -> np.ndarray:
 # DEDUPLICATION
 # =====================================================
 
-def deduplicate_by_cosine_bedrock(df):
-    df = df.copy()
-    df["date"] = pd.to_datetime(df["date"], errors="coerce").dt.date
-    results = []
+# def deduplicate_by_cosine_bedrock(df):
+#     df = df.copy()
+#     df["date"] = pd.to_datetime(df["date"], errors="coerce").dt.date
+#     results = []
 
-    for (company, date), grp in df.groupby(["company", "date"], sort=False):
-        emb = titan_embed_texts(grp["headline"].fillna("").tolist())
-        sim = cosine_similarity(emb)
+#     for (company, date), grp in df.groupby(["company", "date"], sort=False):
+#         emb = titan_embed_texts(grp["headline"].fillna("").tolist())
+#         sim = cosine_similarity(emb)
 
-        cluster = [-1] * len(grp)
-        cid = 0
+#         cluster = [-1] * len(grp)
+#         cid = 0
 
-        for i in range(len(grp)):
-            if cluster[i] != -1:
-                continue
-            idxs = np.where(sim[i] >= DUP_THRESHOLD)[0]
-            for j in idxs:
-                cluster[j] = cid
-            cid += 1
+#         for i in range(len(grp)):
+#             if cluster[i] != -1:
+#                 continue
+#             idxs = np.where(sim[i] >= DUP_THRESHOLD)[0]
+#             for j in idxs:
+#                 cluster[j] = cid
+#             cid += 1
 
-        grp = grp.copy()
-        grp["dup_group_id"] = [f"{company}_{date}_{c}" for c in cluster]
-        grp["is_duplicate"] = grp.duplicated("dup_group_id", keep="first").map(
-            {True: "Yes", False: "No"}
-        )
+#         grp = grp.copy()
+#         grp["dup_group_id"] = [f"{company}_{date}_{c}" for c in cluster]
+#         grp["is_duplicate"] = grp.duplicated("dup_group_id", keep="first").map(
+#             {True: "Yes", False: "No"}
+#         )
 
-        results.append(grp)
+#         results.append(grp)
 
-    return pd.concat(results).sort_index()
+#     return pd.concat(results).sort_index()
+
+
 # =====================================================
 # CLASSIFICATION (THREAD SAFE)
 # =====================================================

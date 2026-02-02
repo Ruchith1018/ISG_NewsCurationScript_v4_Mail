@@ -10,8 +10,9 @@ from utils import *
 from pathlib import Path
 from dotenv import load_dotenv         
 from mailer import send_latest_finaloutput_gmail
-
+from constants import INTERNAL_DEDUPE_COLS
 warnings.filterwarnings("ignore")
+
 
 
 # --------------------------------------------------
@@ -145,15 +146,35 @@ def process_articles(articles_list, mode, er, from_dt, to_dt, bedrock, loc_df, l
         return df
 
     # --------------------------------------------------
-    # DEDUPLICATION
+    # DEDUPLICATION (EventRegistry native)
     # --------------------------------------------------
-    df["is_duplicate"] = "No"
-    df["dup_group_id"] = ""
+    df = ensure_columns(df, {
+        "is_duplicate": "No",
+        "dup_group_id": None,
+        "er_is_duplicate": False,
+        "er_original_uri": None,
+        "er_uri": None
+    })
 
-    deduped = deduplicate_by_cosine_bedrock(df)
-    df.loc[deduped.index, "is_duplicate"] = deduped["is_duplicate"]
-    df.loc[deduped.index, "dup_group_id"] = deduped["dup_group_id"]
-    print(f"Duplicates marked: {(df['is_duplicate'] == 'Yes').sum()}")
+    # Ensure is_duplicate is consistent with er_is_duplicate
+    df["is_duplicate"] = df["er_is_duplicate"].fillna(False).apply(
+        lambda x: "Yes" if bool(x) else "No"
+    )
+
+    # Ensure group id exists (use original if present else self)
+    df["dup_group_id"] = (
+        df["dup_group_id"]
+        .fillna(df["er_original_uri"])
+        .fillna(df["er_uri"])
+    )
+
+    print(f"Duplicates marked (ER): {(df['is_duplicate'] == 'Yes').sum()}")
+
+
+    # deduped = deduplicate_by_cosine_bedrock(df)
+    # df.loc[deduped.index, "is_duplicate"] = deduped["is_duplicate"]
+    # df.loc[deduped.index, "dup_group_id"] = deduped["dup_group_id"]
+    # print(f"Duplicates marked: {(df['is_duplicate'] == 'Yes').sum()}")
 
     # --------------------------------------------------
     # PROCESS UNIQUE
@@ -304,11 +325,14 @@ def main():
                 
                 # Save separate file for companies
                 now = datetime.now()
+                df_companies_out = df_companies.drop(columns=INTERNAL_DEDUPE_COLS, errors="ignore")
+
                 companies_path = save_to_excel(
-                    df_companies,
+                    df_companies_out,
                     BASE_FOLDER,
                     f"Companies_Output_{now:%Y%m%d_%H%M%S}.xlsx"
                 )
+
                 print(f"✅ Companies output saved: {companies_path}")
         
         # Process locations if configured
@@ -322,8 +346,9 @@ def main():
                 
                 # Save separate file for locations
                 now = datetime.now()
+                df_locations_out = df_locations.drop(columns=INTERNAL_DEDUPE_COLS, errors="ignore")
                 locations_path = save_to_excel(
-                    df_locations,
+                    df_locations_out,
                     BASE_FOLDER,
                     f"Locations_Output_{now:%Y%m%d_%H%M%S}.xlsx"
                 )
@@ -347,6 +372,10 @@ def main():
         
         # Save combined output
         df_for_excel = df_combined.copy()
+
+        # drop internal dedupe columns
+        df_for_excel = df_for_excel.drop(columns=INTERNAL_DEDUPE_COLS, errors="ignore")
+
         df_for_excel["analyst_headline"] = ""
         df_for_excel["analyst_content"] = ""
 
