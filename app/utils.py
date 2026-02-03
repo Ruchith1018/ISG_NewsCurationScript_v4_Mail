@@ -149,6 +149,8 @@ def fetch_news_articles(er, from_dt, to_dt, companies, max_items, language, data
                 # Use original uri as group if duplicate, else self uri
                 group_uri = orig_uri if is_dup and orig_uri else info_uri
 
+                event_uri = art.get("eventUri")
+
                 all_articles.append({
                     "company": company,
                     "company_name": company,
@@ -167,6 +169,8 @@ def fetch_news_articles(er, from_dt, to_dt, companies, max_items, language, data
 
                     # the only dedupe column we want to keep in final excel
                     "is_duplicate": "Yes" if is_dup else "No",
+                    "er_event_uri": event_uri,
+
                 })
 
             print(f"✅ Done for {company}")
@@ -197,6 +201,9 @@ def fetch_news_articles(er, from_dt, to_dt, companies, max_items, language, data
 
                 group_uri = orig_uri if is_dup and orig_uri else info_uri
 
+                event_uri = art.get("eventUri")
+
+
                 all_articles.append({
                     "company": company,
                     "company_name": company,
@@ -212,6 +219,8 @@ def fetch_news_articles(er, from_dt, to_dt, companies, max_items, language, data
                     "er_original_uri": orig_uri,
                     "dup_group_id": group_uri,
                     "is_duplicate": "Yes" if is_dup else "No",
+                    "er_event_uri": event_uri,
+
                 })
                 art_count += 1
             print(f"✅ Done for {company}:{art_count} articles")

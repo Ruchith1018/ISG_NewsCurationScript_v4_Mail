@@ -117,6 +117,10 @@ def process_articles(articles_list, mode, er, from_dt, to_dt, bedrock, loc_df, l
     df = df[mask]
     print(f'Articles after cutoff filter: {df.shape[0]}')
 
+    before = len(df)
+    df = df[df["er_event_uri"].isna()]
+    print(f"Articles skipped due to eventUri (clustered events): {before - len(df)}")
+
     if df.empty:
         return df
 
