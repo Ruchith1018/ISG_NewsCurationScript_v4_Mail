@@ -175,10 +175,20 @@ def process_articles(articles_list, mode, er, from_dt, to_dt, bedrock, loc_df, l
     print(f"Duplicates marked (ER): {(df['is_duplicate'] == 'Yes').sum()}")
 
 
-    # deduped = deduplicate_by_cosine_bedrock(df)
-    # df.loc[deduped.index, "is_duplicate"] = deduped["is_duplicate"]
-    # df.loc[deduped.index, "dup_group_id"] = deduped["dup_group_id"]
-    # print(f"Duplicates marked: {(df['is_duplicate'] == 'Yes').sum()}")
+    df_no = df[df["is_duplicate"] == "No"].copy()
+
+    if not df_no.empty:
+        deduped = deduplicate_by_cosine_bedrock(df_no)
+
+        # update only those rows (keeps ER duplicates untouched)
+        df.loc[deduped.index, "is_duplicate"] = deduped["is_duplicate"]
+
+        # optional: keep ER dup_group_id if already present, else set cosine group id
+        df.loc[deduped.index, "dup_group_id"] = df.loc[deduped.index, "dup_group_id"].fillna(deduped["dup_group_id"])
+
+        print(f"Additional duplicates marked (Cosine): {(deduped['is_duplicate'] == 'Yes').sum()}")
+
+    print(f"Total duplicates after both layers: {(df['is_duplicate'] == 'Yes').sum()}")
 
     # --------------------------------------------------
     # PROCESS UNIQUE
@@ -393,7 +403,7 @@ def main():
         run_stats["final_rows_saved"] = len(df_combined)
         
         # Insert into database
-        #insert_news_df(df_combined)
+        insert_news_df(df_combined[:1])
 
         run_stats["status"] = "SUCCESS"
         print("✅ Pipeline completed successfully")

@@ -125,7 +125,7 @@ COMPANIES_LIST = []  # Will be populated below
 LOCATIONS_LIST = []  # Will be populated below
 
 # Determine which sources to fetch
-FETCH_COMPANIES = True  # Set to False to skip companies
+FETCH_COMPANIES = False  # Set to False to skip companies
 FETCH_LOCATIONS = True  # Set to True to also fetch locations
 
 # Populate lists based on configuration
@@ -133,21 +133,21 @@ if FETCH_COMPANIES:
     table, field = get_table_config("supplier")
     companies_df = run_query(f"SELECT {field} FROM {table} ORDER BY company_name ASC;")
     if companies_df is not None:
-        COMPANIES_LIST = list(companies_df["full_name"].unique())[:20]
+        COMPANIES_LIST = list(companies_df["full_name"].unique())
         print(f'COMPANIES to fetch: {len(COMPANIES_LIST)}')
 
 if FETCH_LOCATIONS:
     table, field = get_table_config("location")
     locations_df = run_query(f"SELECT {field} FROM {table} ORDER BY company_name ASC;")
     if locations_df is not None:
-        LOCATIONS_LIST = list(locations_df["full_name"].unique())[:20]
+        LOCATIONS_LIST = list(locations_df["full_name"].unique())[:5]
         print(f'LOCATIONS to fetch: {len(LOCATIONS_LIST)}')
 
 # -----------------------------
 # News API Configuration
 # -----------------------------
 days_back = 1
-cutoff_time = (pd.Timestamp.now(tz="Asia/Kolkata") - pd.Timedelta(days=days_back)).normalize() + pd.Timedelta(hours=13)
+cutoff_time = (datetime.now() - timedelta(days=days_back)).strftime("%Y-%m-%d 13:00:00")
 print("cutoff_time (IST):", cutoff_time)
 
 MAX_ITEMS = 100  # Maximum articles to fetch per company/location
